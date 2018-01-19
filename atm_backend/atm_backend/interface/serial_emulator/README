@@ -1,0 +1,2 @@
+Emulators are given to make testing easier, as they replace the PSoCs. While we recommend adapting these to your
+own protocol for testing and debugging, they are neither needed nor wanted for the final submission at Handoff.

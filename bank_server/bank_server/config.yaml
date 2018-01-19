@@ -1,0 +1,25 @@
+# Extra logging for debugging purposes
+verbose: true
+
+# Parameters of which host and port to
+# listen on for connections from admin interface
+admin:
+  host: 0.0.0.0
+  port: 1338
+
+# Parameters of which host and port to
+# listen on for connections from the atm
+bank:
+  host: 0.0.0.0
+  port: 1337
+
+# Parameters used to specify where to save
+# sqlite db and which file to initialize the
+# db with on startup
+database:
+  db_init: /bank_server/ectf_db.sql
+  db_path: /bank_server/ectf.db
+
+logging:
+  log_path: /logs
+  log_name: bank_server

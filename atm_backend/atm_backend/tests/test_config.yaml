@@ -1,0 +1,21 @@
+verbose: true
+
+admin:
+  host: 0.0.0.0
+  port: 1338
+
+atm:
+  host: 0.0.0.0
+  port: 1336
+
+bank:
+  host: 0.0.0.0
+  port: 1337
+
+database:
+  db_init: /bank_server/tests/test_db.sql
+  db_path: /bank_server/tests/test.db
+
+logging:
+  log_path: /bank/bank_server/logs/
+  log_name: bank_server

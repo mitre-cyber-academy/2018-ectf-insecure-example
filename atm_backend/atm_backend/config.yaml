@@ -1,0 +1,19 @@
+verbose: true
+
+devices:
+  atm:
+    dummy: false
+    host: 0.0.0.0
+    port: 1336
+  bank:
+    dummy: false
+    host: 127.0.0.1
+    port: 1337
+  hsm:
+    dummy: false
+  card:
+    dummy: false
+
+logging:
+  log_path: /logs
+  log_name: atm_backend
