@@ -12,7 +12,11 @@ class Card(Psoc):
         verbose (bool, optional): Whether to print debug messages
     """
     def __init__(self, port=None, verbose=False):
-        super(Card, self).__init__('CARD', port, verbose)
+        self.port = port
+        self.verbose = verbose
+
+    def initialize(self):
+        super(Card, self).__init__('CARD', self.port, self.verbose)
         self.CHECK_BAL = 1
         self.WITHDRAW = 2
         self.CHANGE_PIN = 3

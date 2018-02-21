@@ -18,9 +18,14 @@ class HSM(Psoc):
     """
 
     def __init__(self, port=None, verbose=False, dummy=False):
-        super(HSM, self).__init__('HSM', port, verbose)
+        self.port = port
+        self.verbose = verbose
+        self.dummy = dummy
+
+    def initialize(self):
+        super(HSM, self).__init__('HSM', self.port, self.verbose)
         self._vp('Please connect HSM to continue.')
-        while not self.connected and not dummy:
+        while not self.connected and not self.dummy:
             time.sleep(2)
         self._vp('Initialized')
 

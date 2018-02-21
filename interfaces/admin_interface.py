@@ -22,7 +22,15 @@ class AdminInterface(cmd.Cmd):
     """
         The following interface must be supported by the XMLRPC server
         running in your Bank Server.
+        ------------------------------------------------------------------------
+        function:
+            ready_for_atm - check if bank is ready for atms to connect
 
+        args:
+            None
+
+        returns:
+            bool: True for success, False otherwise.
         ------------------------------------------------------------------------
         function:
             create_account
@@ -71,10 +79,10 @@ class AdminInterface(cmd.Cmd):
     prompt = 'admin$ '
     bank_admin = xmlrpclib.ServerProxy('http://' + HOST + ':' + PORT)
 
-    def do_hello(self, args):
-        """hello"""
+    def do_ready_for_atm(self, args):
+        """ready_for_atm"""
         try:
-            print self.bank_admin.hello()
+            print self.bank_admin.ready_for_atm()
         except socket.error:
             print 'Error connecting to ATM'
         except:
@@ -88,7 +96,7 @@ class AdminInterface(cmd.Cmd):
             assert len(account_name) <= ACCOUNT_NAME_MAX_LENGTH
             amount = int(args.split(' ')[1])
             with open(args.split(' ')[2], 'wb') as fp:
-                material = self.bank_admin.create_account(account_name, amount)
+                material = self.bank_admin.create_account(account_name, amount).data
                 fp.write(material)
             print material
 
@@ -137,7 +145,7 @@ class AdminInterface(cmd.Cmd):
         """create_atm <provisioning_material_filename>"""
         try:
             with open(args.split(' ')[0], 'wb') as fp:
-                material = self.bank_admin.create_atm()
+                material = self.bank_admin.create_atm().data
                 fp.write(material)
             print material
         except socket.error:

@@ -20,6 +20,15 @@ class ProvisionTool(object):
         self.card = card
         logging.info('provision tool initialized')
 
+    def ready_for_hsm(self):
+        return True
+
+    def hsm_connected(self):
+        return self.hsm.connected
+
+    def card_connected(self):
+        return self.card.connected
+
     def provision_card(self, card_blob, pin):
         """Attempts to provision an ATM card
 

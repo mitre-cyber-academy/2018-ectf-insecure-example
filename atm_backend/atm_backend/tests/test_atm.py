@@ -35,7 +35,7 @@ class TestCard(TestCase):
     def tearDownClass(cls):
         pass
 
-    def test_check_balance_invalid_pin(self):
+    def test_all(self):
         self.card_id = self.admin_iface.create_account(self.account_name, self.amount)
         self.assertTrue(self.card_id)
 

@@ -17,7 +17,7 @@ setup(
     python_requires='<3',
     packages=find_packages('bank_server', exclude=['contrib', 'docs', 'tests']),
 
-    install_requires=['pyyaml','pyserial'],
+    install_requires=['pyyaml'],
     # $ pip install -e .[dev,test]
     extras_require={
         'dev': ['check-manifest'],

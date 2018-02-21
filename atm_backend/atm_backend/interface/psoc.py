@@ -45,7 +45,9 @@ class Psoc(object):
         self.sync_name_n = '%s_N' % name
         self.sync_name_p = '%s_P' % name
 
-        if not ser:
+        if ser:
+            self.connected = True
+        else:
             self.start_connect_watcher()
 
     def _vp(self, msg, stream=logging.info):

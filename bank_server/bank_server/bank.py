@@ -46,7 +46,7 @@ class Bank(object):
     "OKAY <amount>\n"
     "ERROR\n"
     """
-    def __init__(self, config, db_mutex):
+    def __init__(self, config, db_mutex, ready_event):
         super(Bank, self).__init__()
         self.bank_host = config['bank']['host']
         self.bank_port = int(config['bank']['port'])
@@ -57,11 +57,17 @@ class Bank(object):
         self.server = SimpleXMLRPCServer((self.bank_host, self.bank_port))
         self.server.register_function(self.withdraw)
         self.server.register_function(self.check_balance)
+
+        # Bank is initialized. Tell AdminBackend to report that ready_for_atm
+        # is True.
+        ready_event.set()
         self.server.serve_forever()
 
     def withdraw(self, atm_id, card_id, amount):
         try:
             amount = int(amount)
+            atm_id = str(atm_id)
+            card_id = str(card_id)
         except ValueError:
             return 'ERROR withdraw command usage: withdraw <atm_id> <card_id> <amount>'
 
@@ -84,16 +90,16 @@ class Bank(object):
         if final_amount >= 0:
             self.db_obj.set_balance(card_id, final_amount)
             self.db_obj.set_atm_num_bills(atm_id, num_bills - amount)
-            return 'OKAY ' + atm_id
+            return 'OKAY ' + str(atm_id)
         else:
             return 'ERROR insufficient funds'
 
     def check_balance(self, card_id):
         try:
-            uuid.UUID(str('{'+card_id+'}'))
+            uuid.UUID('{'+str(card_id)+'}')
         except ValueError:
             return 'ERROR check_balance command usage: balance <card_id>'
-        balance = self.db_obj.get_balance(card_id)
+        balance = self.db_obj.get_balance(str(card_id))
         if balance is None:
             return 'ERROR could not lookup account \'' + str(card_id) + '\''
         else:

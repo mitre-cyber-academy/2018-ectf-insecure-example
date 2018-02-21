@@ -99,6 +99,7 @@ from logging import handlers
 import sys
 import SimpleXMLRPCServer
 import yaml
+import threading
 from . import ATM, ProvisionTool
 from . import Bank, Card, HSM, DummyBank, DummyCard, DummyHSM
 
@@ -153,7 +154,7 @@ def main():
     else:
         logging.info('Initializing Card...')
         card = Card(verbose=config['verbose'])
-        logging.info('Card watcher initialized.')
+        logging.info('Card initialized.')
 
     # Create ATM object with bank, hsm, and card instances
     logging.info('Initializing ATM...')
@@ -178,12 +179,25 @@ def main():
     server.register_function(atm.change_pin)
     server.register_function(provision_tool.provision_card)
     server.register_function(provision_tool.provision_atm)
+    server.register_function(provision_tool.ready_for_hsm)
+    server.register_function(provision_tool.hsm_connected)
+    server.register_function(provision_tool.card_connected)
 
     logging.info('ATM xmlrpc interface initialized.')
     logging.info('ATM listening on %s:%s' % (config['devices']['atm']['host'], str(config['devices']['atm']['port'])))
-    # Start xmlrpc server
-    server.serve_forever()
 
+    # Start xmlrpc server
+    t = threading.Thread(target=server.serve_forever)
+    t.daemon = True
+    t.start()
+
+    # Blocks until a hsm is connected
+    hsm.initialize()
+
+    # Spins up thread to connect/disconnect cards
+    card.initialize()
+
+    t.join()
 
 if __name__ == '__main__':
     main()

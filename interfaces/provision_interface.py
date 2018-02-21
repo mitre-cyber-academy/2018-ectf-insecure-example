@@ -28,7 +28,33 @@ class ProvisionInterface(cmd.Cmd):
     """
         The following interface must be supported by the XMLRPC server
         running in your ATM Backend.
+        ------------------------------------------------------------------------
+        function:
+            ready_for_hsm - check if atm is ready for hsm to be connected
 
+        args:
+            None
+
+        returns:
+            bool: True for success, False otherwise.
+        ------------------------------------------------------------------------
+        function:
+            hsm_connected - check if hsm is connected to the atm
+
+        args:
+            None
+
+        returns:
+            bool: True for success, False otherwise.
+        ------------------------------------------------------------------------
+        function:
+            card_connected - check if a card is connected to the atm
+
+        args:
+            None
+
+        returns:
+            bool: True for success, False otherwise.
         ------------------------------------------------------------------------
         function:
             provision_card
@@ -60,10 +86,30 @@ class ProvisionInterface(cmd.Cmd):
     prompt = 'provision$ '
     atm = xmlrpclib.Server('http://' + HOST + ':' + PORT)
 
-    def do_hello(self, args):
+    def do_ready_for_hsm(self, args):
         """hello"""
         try:
-            print self.atm.hello()
+            print self.atm.ready_for_hsm()
+        except socket.error:
+            print 'Error connecting to ATM'
+        except:
+            print '**** RECEIVED ERROR ****'
+            print traceback.format_exc()
+
+    def do_hsm_connected(self, args):
+        """hsm_connected"""
+        try:
+            print self.atm.hsm_connected()
+        except socket.error:
+            print 'Error connecting to ATM'
+        except:
+            print '**** RECEIVED ERROR ****'
+            print traceback.format_exc()
+
+    def do_card_connected(self, args):
+        """card_connected"""
+        try:
+            print self.atm.card_connected()
         except socket.error:
             print 'Error connecting to ATM'
         except:
@@ -76,8 +122,8 @@ class ProvisionInterface(cmd.Cmd):
         try:
             filename = args.split(' ')[0]
             with open(filename) as fp:
-                card_provision_material = fp.read().strip(" \n\r")
-            assert len(card_provision_material) <= PROVISION_MATERIAL_MAX_SIZE
+                card_provision_material = xmlrpclib.Binary(fp.read().strip(" \n\r"))
+            assert len(card_provision_material.data) <= PROVISION_MATERIAL_MAX_SIZE
             pin = args.split(' ')[1].strip(" \n\r")
             print "PIN: " + pin
             assert len(pin) == REQUIRED_PIN_LENGTH
@@ -99,8 +145,8 @@ class ProvisionInterface(cmd.Cmd):
         try:
             provision_material_filename = args.split(' ')[0]
             with open(provision_material_filename) as fp:
-                atm_provision_material = fp.read().strip(" \n\r")
-            assert len(atm_provision_material) < PROVISION_MATERIAL_MAX_SIZE
+                atm_provision_material = xmlrpclib.Binary(fp.read().strip(" \n\r"))
+            assert len(atm_provision_material.data) < PROVISION_MATERIAL_MAX_SIZE
 
             billfile_name = args.split(' ')[1]
             with open(billfile_name) as fp:

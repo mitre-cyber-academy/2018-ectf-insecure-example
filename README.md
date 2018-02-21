@@ -11,6 +11,34 @@ quality.  This code is being provided for educational purposes to serve as a
 simple example that meets the minimum functional requirements for the 2018 MITRE
 eCTF competition.  Use this code at your own risk!
 
+## Updates 
+
+### Fixed return types
+
+This update fixes the type for the return value from `create_account` and `create_atm`. 
+These functions previously returned string types, but the requirements state that the
+functions must return an xmlrpclib.Binary type.  This update fixes the example code 
+so that it is consistent with the requirements.
+
+### Interface Additions
+
+This update adds simple status functions to the admin interface and the atm 
+provision interface.  These updates were needed to help simplify testing.
+The rules document was also updated to reflect this change.
+
+One new function was added to the admin interface:
+* `ready_for_atm` returns `True` only when the bank is ready for ATM(s) to connect 
+to its bank interface on port 1337. Use this functon to ensure that no ATM is 
+started until the bank is ready to accept connections.
+
+Three functions were added to the provision interface:
+* `ready_for_hsm` returns `True` only when it is ready and waiting for an HSM to connect.
+* `hsm_connected` returns `True` only after the HSM has connected and synced with the ATM 
+  (it has been identified as an HSM).
+* `card_connected` returns `True` only after a card has connected and synced with the ATM 
+  (it has been identified as a card).
+
+
 # Getting started
 
 ## Installing Dependencies

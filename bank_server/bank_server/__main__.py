@@ -45,11 +45,12 @@ def main():
 
     # Create db mutex for use by admin and bank backends
     db_mutex = threading.Lock()
-    thread_obj = threading.Thread(target=AdminBackend, args=(config, db_mutex))
+    ready_event = threading.Event()
+    thread_obj = threading.Thread(target=AdminBackend, args=(config, db_mutex, ready_event))
     thread_obj.daemon = True
     thread_obj.start()
 
-    Bank(config, db_mutex)
+    Bank(config, db_mutex, ready_event)
 
 
 if __name__ == "__main__":
