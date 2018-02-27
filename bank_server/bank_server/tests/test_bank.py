@@ -17,10 +17,11 @@ class TestBank(TestCase):
         cls.config = config
         # Create database mutex for Bank and AdminBackend
         db_mutex = threading.Lock()
+        ready_event = threading.Event()
 
         # Run bank and its admin interface
-        cls.bank = Process(target=Bank, args=(config, db_mutex))
-        cls.admin = Process(target=AdminBackend, args=(config, db_mutex))
+        cls.bank = Process(target=Bank, args=(config, db_mutex, ready_event))
+        cls.admin = Process(target=AdminBackend, args=(config, db_mutex, ready_event))
         cls.bank.start()
         cls.admin.start()
 
