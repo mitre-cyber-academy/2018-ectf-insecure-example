@@ -31,9 +31,9 @@
 /* 
  * How to read from EEPROM (persistent memory):
  * 
- * // read variable:
- * static const uint8 EEPROM_BUF_VAR[len] = { val1, val2, ... };
  * // write variable:
+ * static const uint8 EEPROM_BUF_VAR[len] = { val1, val2, ... };
+ * // read variable:
  * volatile const uint8 *ptr = EEPROM_BUF_VAR;
  * 
  * uint8 val1 = *ptr;
@@ -41,7 +41,7 @@
  * USER_INFO_Write(message, EEPROM_BUF_VAR, 4u); 
  */
 
-// global EEPROM read variables
+// global EEPROM write variables
 static const uint8 MONEY[MAX_BILLS][BILL_LEN] = {EMPTY_BILL};
 static const uint8 UUID[UUID_LEN + 1] = {'b', 'l', 'a', 'n', 'k', ' ', 
                                         'u', 'u', 'i', 'd', '!', 0x00 };
