@@ -96,19 +96,22 @@ void provision()
 
 void dispenseBill()
 {
-    static uint8 stackloc = 0;
-    uint8 message[16];
-    volatile const uint8* ptr; 
+    uint8 message[16], stackloc;
+    static const uint8 STACKLOC[1] = {0x00}; // write variable
+    volatile const uint8* stackptr = STACKLOC; // read variable
+    volatile const uint8* billptr;
     
-    ptr = MONEY[stackloc];
+    stackloc = *stackptr; // read stackloc from EEPROM
+    billptr = MONEY[stackloc];
     
     memset(message, 0u, 16);
-    memcpy(message, (void*)ptr, BILL_LEN);
+    memcpy(message, (void*)billptr, BILL_LEN);
 
     pushMessage(message, BILL_LEN);
     
     PIGGY_BANK_Write((uint8*)EMPTY_BILL, MONEY[stackloc], 16);
     stackloc = (stackloc + 1) % 128;
+    PIGGY_BANK_Write(&stackloc, STACKLOC, 1); // save to EEPROM
 }
 
 
