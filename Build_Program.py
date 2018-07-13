@@ -355,109 +355,6 @@ def PSoC4_VerifyFlash(flashSize):
             return E_FAIL
     return hr
 
-def ProgramHSM():
-    global m_sLastError
-    # Open Port - get last (connected) port in the ports list
-    hr = InitializePort()
-    if (not SUCCEEDED(hr)): return hr
-    
-    # Set Hex File ##NEW CODE
-    hResult = pp.HEX_ReadFile(os.getcwd() + "\SECURITY_MODULE.cydsn\CortexM0\ARM_GCC_541\Release\SECURITY_MODULE.hex")
-    hr = hResult[0]    
-    hexImageSize = int(hResult[1])
-    m_sLastError = hResult[2]
-    if (not SUCCEEDED(hr)): return hr
-    
-    #Read chip level protection from hex and check Chip Level Protection mode
-    #If it is VIRGIN then don't allow Programming, since it can destroy chip
-    hResult = pp.HEX_ReadChipProtection()
-    hr = hResult[0]
-    hex_chipProt = hResult[1]
-    m_sLastError = hResult[2]
-    if (not SUCCEEDED(hr)): return hr
-    if (ord(hex_chipProt[0]) == CHIP_PROT_VIRGIN):
-        m_sLastError = "Transition to VIRGIN is not allowed. It will destroy the chip. Please contact Cypress if you need this specifically."
-        return E_FAIL
-
-    # Set Acquire Mode
-    pp.SetAcquireMode("Reset")
-
-    #Acquire Device
-    hResult = pp.DAP_Acquire()
-    hr = hResult[0]
-    m_sLastError = hResult[1]
-    if (not SUCCEEDED(hr)): return hr
-    
-    #Check Hex File and Device compatibility
-    fCompatibility = 0
-    hResult = CheckHexAndDeviceCompatibility()
-    hr = hResult[0]
-    fCompatibility = hResult[1]    
-    if (not SUCCEEDED(hr)): return hr
-    if (fCompatibility == 0):
-        m_sLastError = "The Hex file does not match the acquired device, please connect the appropriate device"
-        return E_FAIL
-    
-    #Erase All
-    hr = PSoC4_EraseAll()
-    if (not SUCCEEDED(hr)): return hr
-
-    #Find checksum of Privileged Flash. Will be used in calculation of User CheckSum later    
-    hResult = pp.PSoC4_CheckSum(0x8000) #CheckSum All Flash ("Privileged + User" Rows)
-    hr = hResult[0]
-    checkSum_Privileged = hResult[1]
-    m_sLastError = hResult[2]
-    if (not SUCCEEDED(hr)): return hr
-
-    #Program Flash
-    hr = ProgramFlash(hexImageSize)
-    if (not SUCCEEDED(hr)): return hr
-
-    #Verify Rows
-    hr = PSoC4_VerifyFlash(hexImageSize)
-    if (not SUCCEEDED(hr)): return hr
-    
-    #Protect All arrays
-    hResult = pp.PSoC4_ProtectAll()
-    hr = hResult[0]
-    m_sLastError = hResult[0]
-    if (not SUCCEEDED(hr)): return hr
-    
-    #Verify protection ChipLevelProtection and Protection data
-    hResult = pp.PSoC4_VerifyProtect()
-    hr = hResult[0]
-    m_sLastError = hResult[0]
-    if (not SUCCEEDED(hr)): return hr
-    
-    #CheckSum verification
-    hResult = pp.PSoC4_CheckSum(0x8000) #CheckSum All Flash (Privileged + User)
-    hr = hResult[0]
-    checkSum_UserPrivileged = hResult[1]
-    m_sLastError = hResult[2]
-    if (not SUCCEEDED(hr)): return hr
-    checkSum_User = checkSum_UserPrivileged - checkSum_Privileged #find checksum of User Flash rows
-    
-    hResult = pp.HEX_ReadChecksum()
-    hr = hResult[0]
-    hexChecksum = hResult[1]
-    m_sLastError = hResult[2]
-    if (not SUCCEEDED(hr)): return hr
-    checkSum_User = checkSum_User & 0xFFFF
-    hexChecksum = hexChecksum & 0xFFFF
-    
-    if (checkSum_User != hexChecksum):
-        print "Mismatch of Checksum: Expected 0x%x, Got 0x%x" %(checkSum_User, hexChecksum)        
-        return E_FAIL
-    else:
-        print "Checksum 0x%x" %(checkSum_User)    
-
-    #Release PSoC3 device
-    hResult = pp.DAP_ReleaseChip()
-    hr = hResult[0]
-    m_sLastError = hResult[1]
-    
-    return hr
-
 def ProgramCARD():
     global m_sLastError
     # Open Port - get last (connected) port in the ports list
@@ -465,7 +362,7 @@ def ProgramCARD():
     if (not SUCCEEDED(hr)): return hr
     
     # Set Hex File ##NEW CODE
-    hResult = pp.HEX_ReadFile(os.getcwd() + "\CARD.cydsn\CortexM0\ARM_GCC_541\Release\CARD.hex")
+    hResult = pp.HEX_ReadFile(os.getcwd() + "\CARD.cydsn\CortexM0\ARM_GCC_541\Debug\CARD.hex")
     hr = hResult[0]
     hexImageSize = int(hResult[1])
     m_sLastError = hResult[2]
@@ -618,24 +515,11 @@ def UpgradeBlock():
     
     return hr
 
-def Execute(program):  
-    if (program == "ATM" or program == "BOTH"):
-        print "Programming ATM..."
-        hr = OpenPort()
-        if (not SUCCEEDED(hr)): return hr
-        hr = ProgramHSM()
-        ClosePort()
-        if(SUCCEEDED(hr)):
-            pass
-        else:
-            return hr
-    if (program == "CARD" or program == "BOTH"):    
-        print "Programming CARD..."
-        hr = OpenPort2()
-        if (not SUCCEEDED(hr)): return hr
-        hr = ProgramCARD()
-        ClosePort()
-    #hr = UpgradeBlock()
+def Execute():
+    print "Programming CARD..."
+    hr = OpenPort()
+    hr = ProgramCARD()
+    ClosePort()
     return hr
 
 def BuildAll():
@@ -643,7 +527,7 @@ def BuildAll():
     #For Windows-x32 Use the following
     #subprocess.call([r"C:\Program Files\Cypress\PSoC Creator\4.0\PSoC Creator\bin\cyprjmgr.exe",  "-wrk", "ectf-workspace.cywrk" , "-build"], shell=True)
     #For Windows-x64 Use the following
-    subprocess.call([r"C:\Program Files (x86)\Cypress\PSoC Creator\4.1\PSoC Creator\bin\cyprjmgr.exe", "-ol", "High", "-c", "Release", "-wrk", "ectf-workspace.cywrk" , "-build"], shell=True)
+    subprocess.call([r"C:\Program Files (x86)\Cypress\PSoC Creator\4.2\PSoC Creator\bin\cyprjmgr.exe", "-ol", "High", "-c", "Release", "-wrk", "ectf-workspace.cywrk" , "-build"], shell=True)
 
     #If using a newer version of PSoC Creator change the number 4.0 to the current version number.
 
@@ -653,26 +537,6 @@ pp = win32com.client.Dispatch("PSoCProgrammerCOM.PSoCProgrammerCOM_Object")
 #For version dependent Prog ID use below commented line, but update there COM-object version (e.g. 14)
 #pp = win32com.client.Dispatch("PSoCProgrammerCOM.PSoCProgrammerCOM_Object.14")
 def main():
-
-    parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('target', type=str,
-                        help='Target for programming either ATM, CARD, or BOTH')
-
-    # print "Please check the BuildAll function to ensure the correct .exe is being called."
-
-    args = parser.parse_args()
-
-    while args.target != "ATM" and args.target != "CARD" and args.target != "BOTH":
-        print "Invalid input... Which devices are being programmed? ATM, CARD, or BOTH?"
-        args.target = raw_input()
-        if (args.target == "BOTH"):
-            print "WARNING: Programming BOTH will require 2 MiniProg3's to be used at the same time."
-            check = raw_input("Do you wish to continue? (yes/no)")
-            if (check == "yes"):
-                break
-            else:
-                args.target = ""
-
     print "Building Code"
     builder = threading.Thread(target=BuildAll)
     builder.start()
@@ -680,7 +544,7 @@ def main():
         pass
 
     print "\nProgram All using COM-object interface only"
-    hr = Execute(args.target)
+    hr = Execute()
     if (SUCCEEDED(hr)):
         strin = "Succeeded!"
     else:

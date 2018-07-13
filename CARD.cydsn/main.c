@@ -9,12 +9,8 @@
  *
  * ========================================
 */
-
-#include "project.h"
-#include <stdlib.h>
+#include <project.h>
 #include "usbserialprotocol.h"
-#include "SW1.h"
-#include "Reset_isr.h"
 
 #define PIN_LEN 8
 #define UUID_LEN 36
@@ -25,38 +21,23 @@
 #define PIN_BAD "BAD"
 #define CHANGE_PIN '3'
 
-//CARD
+#define PIN ((uint8*)(CY_FLASH_BASE + 0x8000))
+#define UUID ((uint8*)(CY_FLASH_BASE + 0x8080))
+#define PROVISIONED ((uint8*)(CY_FLASH_BASE + 0x8100))
+#define write_pin(p) CySysFlashWriteRow(256, p);
+#define write_uuid(u) CySysFlashWriteRow(257, u);
 
-/* 
- * How to read from EEPROM (persistent memory):
- * 
- * // read variable:
- * static const uint8 EEPROM_BUF_VAR[len] = { val1, val2, ... };
- * // write variable:
- * volatile const uint8 *ptr = EEPROM_BUF_VAR;
- * 
- * uint8 val1 = *ptr;
- * uint8 buf[4] = { 0x01, 0x02, 0x03, 0x04 };
- * USER_INFO_Write(message, EEPROM_BUF_VAR, 4u); 
- */
-
-// global EEPROM read variables
-static const uint8 PIN[PIN_LEN] = {0x36, 0x35, 0x34, 0x33, 0x35, 0x34, 0x34, 0x36}; //eCTF
-static const uint8 UUID[UUID_LEN] = {0x37, 0x33, 0x36, 0x35, 0x36, 0x33, 0x37, 0x35, 0x37, 0x32, 0x36, 0x39, 0x37, 0x34, 0x37, 0x39}; //security
-
-
-// reset interrupt on button press
-CY_ISR(Reset_ISR)
+void mark_provisioned()
 {
-    pushMessage((uint8*)"In interrupt\n", strlen("In interrupt\n"));
-    SW1_ClearInterrupt();
-    CySoftwareReset();
+    uint8 row[128];
+    *row = 1;
+    CySysFlashWriteRow(258, row);
 }
 
 // provisions card (should only ever be called once)
 void provision()
 {
-    uint8 message[64];
+    uint8 message[128];
     
     // synchronize with bank
     syncConnection(SYNC_PROV);
@@ -65,46 +46,26 @@ void provision()
         
     // set PIN
     pullMessage(message);
-    USER_INFO_Write(message, PIN, PIN_LEN);
+    write_pin(message);
     pushMessage((uint8*)RECV_OK, strlen(RECV_OK));
     
     // set account number
     pullMessage(message);
-    USER_INFO_Write(message, UUID, UUID_LEN);
+    write_uuid(message);
     pushMessage((uint8*)RECV_OK, strlen(RECV_OK));
 }
 
-
-int main(void)
+int main (void)
 {
-    // enable global interrupts -- DO NOT DELETE
-    CyGlobalIntEnable;
-    
-    // start reset button
-    Reset_isr_StartEx(Reset_ISR);
+    CyGlobalIntEnable;      /* Enable global interrupts */
     
     /* Declare vairables here */
-    uint8 i;
     uint8 message[128];
     
-    // local EEPROM read variable
-    static const uint8 PROVISIONED[1] = {0x00};
-    
-    // EEPROM write variable
-    volatile const uint8 *ptr;
-    
-    /* Place your initialization/startup code here (e.g. MyInst_Start()) */
-    USER_INFO_Start();
-    USB_UART_Start();
-    
     // Provision card if on first boot
-    ptr = PROVISIONED;
-    if (*ptr == 0x00) {
+    if (*PROVISIONED == 0x00) {
         provision();
-        
-        // Mark as provisioned
-        i = 0x01;
-        USER_INFO_Write(&i,PROVISIONED, 1u);
+        mark_provisioned();
     }
     
     // Go into infinite loop
@@ -130,8 +91,7 @@ int main(void)
             if(message[0] == CHANGE_PIN)
             {
                 pullMessage(message);
-                USER_INFO_Write(message, PIN, PIN_LEN);
-                
+                write_pin(message);
                 pushMessage((uint8*)PINCHG_SUC, strlen(PINCHG_SUC));
             } else {
                 pushMessage(UUID, UUID_LEN);   
@@ -139,5 +99,3 @@ int main(void)
         }
     }
 }
-
-/* [] END OF FILE */

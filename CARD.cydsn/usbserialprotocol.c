@@ -24,8 +24,8 @@
 uint8 getValidByte()
 {
     uint8 retval = 0u;
-    while(USB_UART_SpiUartGetRxBufferSize() < 1); // wait for byte
-    retval = USB_UART_UartGetByte();
+    while(UART_SpiUartGetRxBufferSize() < 1); // wait for byte
+    retval = UART_UartGetByte();
     return retval;
 }
 
@@ -34,10 +34,10 @@ int pushMessage(const uint8 data[], uint8 size)
 {
     int i;
 
-    USB_UART_UartPutChar(size);
+    UART_UartPutChar(size);
     
     for (i = 0; i < size; i++) {
-        USB_UART_UartPutChar(data[i]);   
+        UART_UartPutChar(data[i]);   
     }
     
     return RECV_OK;
