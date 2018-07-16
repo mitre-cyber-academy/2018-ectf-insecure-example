@@ -1,34 +1,11 @@
 """ Bank Server
 This module implements a bank server interface
-
-The module exposes the following functions through a socket listening on
-host 127.0.0.1 and port 1337
-
-------------------------------------------------------------------------
-function:
-    withdraw
-
-args:
-    param1 (string - max length 1024): card_id of account to withdraw from
-    param2 (string - max length ): amount to withdraw
-
-returns:
-    string: 'OKAY' on Success, 'ERROR' otherwise.
-------------------------------------------------------------------------
-function:
-    check_balance
-
-args:
-    param1 (string - max length 1024): card_id of account to check balance
-
-returns:
-    String: Account balance on Success, empty string otherwise.
-------------------------------------------------------------------------
 """
 
 import uuid
-from SimpleXMLRPCServer import SimpleXMLRPCServer
-from bank_server import DB
+from . import db
+import logging
+import sys
 
 
 class Bank(object):
@@ -104,3 +81,17 @@ class Bank(object):
             return 'ERROR could not lookup account \'' + str(card_id) + '\''
         else:
             return 'OKAY ' + str(balance)
+
+
+def main():
+    log = logging.getLogger('')
+    log.setLevel(logging.DEBUG)
+    log_format = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setFormatter(log_format)
+    log.addHandler(ch)
+
+
+if __name__ == "__main__":
+    main()

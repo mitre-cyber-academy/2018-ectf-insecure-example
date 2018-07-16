@@ -143,4 +143,5 @@ dkms.conf
 dispensed_bills.txt
 billfile.txt
 *blob
+*.json
 ################

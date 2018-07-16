@@ -531,6 +531,7 @@ def BuildAll():
 
     #If using a newer version of PSoC Creator change the number 4.0 to the current version number.
 
+
 #Begin main program
 #Use Version Independent Prog ID to instantiate COM-object
 pp = win32com.client.Dispatch("PSoCProgrammerCOM.PSoCProgrammerCOM_Object")
@@ -550,7 +551,6 @@ def main():
     else:
         strin = "Failed! " + m_sLastError
     print strin
-    raw_input("Press Enter to exit")
     #End main function
 
 
