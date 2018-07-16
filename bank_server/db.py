@@ -76,7 +76,9 @@ class DB(object):
         Returns:
             (string or None): Returns atm_id on Success. None otherwise.
         """
-        return atm_id
+        if self.get_atm_num_bills(atm_id):
+            return atm_id
+        return None
 
     def get_atm_num_bills(self, atm_id):
         """get number of bills in atm: atm_id

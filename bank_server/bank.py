@@ -3,42 +3,40 @@ This module implements a bank server interface
 """
 
 import uuid
-from . import db
+import db
 import logging
+from logging import info as log
 import sys
+import serial
+import argparse
+import struct
 
 
 class Bank(object):
-    """
-    request is OPCODE followed by fields separated by spaces, terminated with a
-    newline
+    GOOD = "O"
+    BAD = "N"
+    ERROR = "E"
 
-    response is either OKAY or ERROR followed by newline. OKAY may have one or
-    more fields separated by spaces. ERROR may have any amount of text between
-    the space and the newline.
-
-    "withdraw <acct> <amount>\n"
-    "OKAY\n"
-    "balance <acct>\n"
-    "OKAY <amount>\n"
-    "ERROR\n"
-    """
-    def __init__(self, config, db_mutex, ready_event):
+    def __init__(self, port, baud=115200, db_path="bank.json"):
         super(Bank, self).__init__()
-        self.bank_host = config['bank']['host']
-        self.bank_port = int(config['bank']['port'])
-        self.db_init = config['database']['db_init']
-        self.db_path = config['database']['db_path']
-        self.db_mutex = db_mutex
-        self.db_obj = DB(db_mutex=self.db_mutex, db_init=self.db_init, db_path=self.db_path)
-        self.server = SimpleXMLRPCServer((self.bank_host, self.bank_port))
-        self.server.register_function(self.withdraw)
-        self.server.register_function(self.check_balance)
+        self.db = db.DB(db_path=db_path)
+        self.atm = serial.Serial(port, baudrate=baud, timeout=10)
 
-        # Bank is initialized. Tell AdminBackend to report that ready_for_atm
-        # is True.
-        ready_event.set()
-        self.server.serve_forever()
+    def start(self):
+        while True:
+            command = self.atm.read()
+            if command == 'b':
+                log("Checking balance")
+                pkt = self.atm.read(76)
+                atm_id, card_id, amount = struct.unpack(">36s36sI", pkt)
+                self.withdraw(atm_id, card_id, amount)
+            elif command == 'w':
+                log("Withdrawing")
+                pkt = self.atm.read(72)
+                atm_id, card_id = struct.unpack(">36s36s", pkt)
+                self.check_balance(atm_id, card_id)
+            elif command != '':
+                self.atm.write(self.ERROR)
 
     def withdraw(self, atm_id, card_id, amount):
         try:
@@ -46,41 +44,67 @@ class Bank(object):
             atm_id = str(atm_id)
             card_id = str(card_id)
         except ValueError:
-            return 'ERROR withdraw command usage: withdraw <atm_id> <card_id> <amount>'
+            self.atm.write(self.ERROR)
+            log("Bad value sent")
+            return
 
-        atm = self.db_obj.get_atm(atm_id)
+        atm = self.db.get_atm(atm_id)
         if atm is None:
-            return 'ERROR could not lookup atm \'' + str(atm_id) + '\''
+            self.atm.write(self.ERROR)
+            log("Bad ATM ID")
+            return
 
-        num_bills = self.db_obj.get_atm_num_bills(atm_id)
+        num_bills = self.db.get_atm_num_bills(atm_id)
         if num_bills is None:
-            return 'ERROR could not lookup atm \'' + str(atm_id) + '\''
+            self.atm.write(self.ERROR)
+            log("Bad ATM ID")
+            return
 
         if num_bills < amount:
-            return 'ERROR insufficient funds in atm \'' + str(atm_id) + '\''
+            self.atm.write(self.BAD)
+            log("Insufficient funds in ATM")
+            return
 
-        balance = self.db_obj.get_balance(card_id)
+        balance = self.db.get_balance(card_id)
         if balance is None:
-            return 'ERROR could not lookup card \'' + str(card_id) + '\''
+            self.atm.write(self.BAD)
+            log("Bad card ID")
+            return
 
         final_amount = balance - amount
         if final_amount >= 0:
-            self.db_obj.set_balance(card_id, final_amount)
-            self.db_obj.set_atm_num_bills(atm_id, num_bills - amount)
-            return 'OKAY ' + str(atm_id)
+            self.db.set_balance(card_id, final_amount)
+            self.db.set_atm_num_bills(atm_id, num_bills - amount)
+            log("Valid withdrawal")
+            pkt = struct.pack(">36s36sI", atm_id, card_id, amount)
+            self.atm.write(self.GOOD)
+            self.atm.write(pkt)
         else:
-            return 'ERROR insufficient funds'
+            self.atm.write(self.BAD)
+            log("Insufficient funds in account")
 
-    def check_balance(self, card_id):
-        try:
-            uuid.UUID('{'+str(card_id)+'}')
-        except ValueError:
-            return 'ERROR check_balance command usage: balance <card_id>'
-        balance = self.db_obj.get_balance(str(card_id))
+    def check_balance(self, atm_id, card_id):
+        if self.db.get_atm(atm_id) is None:
+            self.atm.write(self.BAD)
+            log("Invalid ATM ID")
+            return
+
+        balance = self.db.get_balance(str(card_id))
         if balance is None:
-            return 'ERROR could not lookup account \'' + str(card_id) + '\''
+            self.atm.write(self.BAD)
+            log("Bad card ID")
         else:
-            return 'OKAY ' + str(balance)
+            log("Valid balance check")
+            pkt = struct.pack(">36s36sI", atm_id, card_id, balance)
+            self.atm.write(self.GOOD)
+            self.atm.write(pkt)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("port", help="Serial port ATM is connected to")
+    parser.add_argument("--baudrate", help="Optional baudrate (default 115200)")
+    return parser.parse_args()
 
 
 def main():
@@ -91,6 +115,14 @@ def main():
     ch = logging.StreamHandler(sys.stdout)
     ch.setFormatter(log_format)
     log.addHandler(ch)
+
+    args = parse_args()
+
+    bank = Bank(args.port, args.baudrate)
+    try:
+        bank.start()
+    except KeyboardInterrupt:
+        print "Shutting down bank..."
 
 
 if __name__ == "__main__":
