@@ -154,16 +154,3 @@ class Card(Psoc):
         self._vp('Provisioning complete')
 
         return True
-
-
-class DummyCard(Card):
-    """Emulated ATM card for testing
-
-    Arguments:
-        verbose (bool, optional): Whether to print debug messages
-        provision (bool, optional): Whether to start the ATM card ready
-            for provisioning
-    """
-    def __init__(self, verbose=False, provision=False):
-        ser = CardEmulator(verbose=verbose, provision=provision)
-        super(DummyCard, self).__init__(ser, verbose)

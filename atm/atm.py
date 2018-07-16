@@ -1,5 +1,6 @@
 import logging
-from interface.psoc import DeviceRemoved, NotProvisioned
+import serial
+import cmd
 
 
 class ATM(object):
@@ -132,3 +133,4 @@ class ATM(object):
         except NotProvisioned:
             logging.info('ATM card has not been provisioned!')
             return False
+

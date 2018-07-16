@@ -1,26 +1,18 @@
 """Backend of ATM interface for xmlrpc"""
 
 import logging
-import sys
-import socket
-import xmlrpclib
+import struct
 
 
 class Bank:
     """Interface for communicating with the bank
 
     Args:
-        address (str): IP address of bank
-        port (int): Port to connect to
+        port (serial.Serial): Port to connect to
     """
 
-    def __init__(self, address='127.0.0.1', port=1337):
-        try:
-            self.bank_rpc = xmlrpclib.ServerProxy('http://' + address + ':' + str(port))
-        except socket.error:
-            logging.error('Error connecting to bank server')
-            sys.exit(1)
-        logging.info('Connected to Bank at %s:%s' % (address, str(port)))
+    def __init__(self, port):
+        self.port = port
 
     def check_balance(self, card_id):
         """Requests the balance of the account associated with the card_id
@@ -59,33 +51,6 @@ class Bank:
         logging.info('check_balance: Bank request failed %s', res)
         return False
 
-
-class DummyBank:
-    """Emulated bank for testing"""
-
-    def __init__(self):
-        pass
-
-    def withdraw(self, hsm_id, card_id, amount):
-        """Authorizes a requested withdrawal
-
-        Args:
-            hsm_id (str): UUID of HSM
-            card_id (doesn't matter): Isn't used
-            amount: (doesn't matter): Isn't used
-
-        Returns:
-            str: hsm_id
-        """
-        return hsm_id
-
-    def check_balance(self, card_id):
-        """Authorizes a requested balance check
-
-        Args:
-            card_id (doesn't matter): Isn't used
-
-        Returns:
-            int: Balance of 2018
-        """
-        return 2018
+    def provision_update(self, uuid, pin, balance):
+        pkt = struct.pack(">36s8sI", uuid, pin, balance)
+        self.port.write("p" + pkt)
