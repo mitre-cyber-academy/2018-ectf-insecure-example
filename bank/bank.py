@@ -25,13 +25,13 @@ class Bank(object):
     def start(self):
         while True:
             command = self.atm.read()
-            if command == 'b':
-                log("Checking balance")
+            if command == 'w':
+                log("Withdrawing")
                 pkt = self.atm.read(76)
                 atm_id, card_id, amount = struct.unpack(">36s36sI", pkt)
                 self.withdraw(atm_id, card_id, amount)
-            elif command == 'w':
-                log("Withdrawing")
+            elif command == 'b':
+                log("Checking balance")
                 pkt = self.atm.read(72)
                 atm_id, card_id = struct.unpack(">36s36s", pkt)
                 self.check_balance(atm_id, card_id)

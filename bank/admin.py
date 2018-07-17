@@ -4,6 +4,8 @@ This module implements the admin access to the database
 
 import db
 import cmd
+import json
+import os
 
 
 class Admin(cmd.Cmd, object):
@@ -21,12 +23,20 @@ class Admin(cmd.Cmd, object):
     def do_add_atm(self, args):
         """Usage: add_atm atm_id"""
         args = args.split(" ")
-        if len(args) != 1 or args[0] == '':
-            print "Usage: add_atm atm_id"
+        if len(args) < 1 or args[0] == '':
+            print "Usage: add_atm config_outfile [bill_file]"
             return
 
-        if self.db.admin_create_atm(args[0]):
-            print "ATM %s added" % args[0]
+        uuid = os.urandom(36)
+        cfg = {"uuid": uuid.encode('hex'), "dispensed": 0}
+        if len(args) == 2:
+            with open(args[1], 'r') as f:
+                cfg["bills"] = f.read().split("\n")
+        with open(args[0], 'w') as f:
+            f.write(json.dumps(cfg))
+
+        if self.db.admin_create_atm(uuid):
+            print "ATM %s added" % args[0].encode('hex')[:16]
         else:
             print "ATM add failed!"
 
@@ -40,7 +50,6 @@ class Admin(cmd.Cmd, object):
             int(args[1])
         except ValueError:
             print "Error: balance must be a valid integer"
-
 
         if self.db.admin_create_account(args[0], args[1]):
             print "Card %s added" % args[0]

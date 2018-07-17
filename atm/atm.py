@@ -76,11 +76,9 @@ class ATM(cmd.Cmd, object):
             # get balance from bank if card accepted PIN
             if card_id:
                 self._vp('check_balance: Requesting balance from Bank')
-                print 100
-                return True
-                # res = self.bank.check_balance(self.uuid, card_id)
-                # if res:
-                #     return res
+                res = self.bank.check_balance(self.uuid, card_id)
+                if res:
+                    return res
             self._vp('check_balance failed')
             return False
         except card.NotProvisioned:
@@ -129,8 +127,7 @@ class ATM(cmd.Cmd, object):
             # request UUID from HSM if card accepts PIN
             if card_id:
                 self._vp('withdraw: Requesting hsm_id from hsm')
-                #if self.bank.withdraw(self.uuid, card_id, amount):
-                if True:
+                if self.bank.withdraw(self.uuid, card_id, amount):
                     with open(self.billfile, "w") as f:
                         self._vp('withdraw: Dispensing bills...')
                         for i in range(self.dispensed, self.dispensed + amount):
@@ -205,8 +202,7 @@ def parse_args():
 
 if __name__ == "__main__":
     b_port, c_port, config, billfile, verbose = parse_args()
-    bank = None
-    #bank = bank.Bank(b_port, verbose=verbose)
+    bank = bank.Bank(b_port, verbose=verbose)
     card = card.Card(c_port, verbose=verbose)
     atm = ATM(bank, card, config, billfile, verbose=verbose)
     atm.cmdloop()

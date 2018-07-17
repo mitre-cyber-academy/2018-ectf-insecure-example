@@ -39,6 +39,8 @@ eCTF competition.  Use this code at your own risk!
 * On the BBB, run `python ~/atm/provision_tool.py [balance] [c_port] [b_port]`
   where `[balance]` is the starting balance `[c_port]` is the port from
   the BBB to the ATM card, and `[b_port]` is the port from the BBB to the bank
-* After card is provisioned, run `python ~/atm/atm.py` to start ATM
-* Run `python ./bank/bank.py [port]` where `[port]` is the valid serial port
+* After card is provisioned, close both provision scripts
+* Run `python ~/atm/atm.py` on the BBB to start ATM
+* Run `python ./bank/bank.py [port]`  on the laptop where `[port]` is
+  the valid serial port
 * System is now ready for use
