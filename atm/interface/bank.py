@@ -14,7 +14,7 @@ class Bank:
     def __init__(self, port):
         self.port = port
 
-    def check_balance(self, card_id):
+    def check_balance(self, atm_id, card_id):
         """Requests the balance of the account associated with the card_id
 
         Args:

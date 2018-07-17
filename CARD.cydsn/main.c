@@ -59,9 +59,12 @@ int main (void)
 {
     CyGlobalIntEnable;      /* Enable global interrupts */
     
+    UART_Start();
+    
     /* Declare vairables here */
     uint8 message[128];
     
+    //while(1) UART_UartPutString("HELLO WORLD!\r\n");
     // Provision card if on first boot
     if (*PROVISIONED == 0x00) {
         provision();

@@ -1,5 +1,5 @@
-from atm.interface.card import Card
-from atm.interface.bank import Bank
+from interface.card import Card
+from interface.bank import Bank
 from os import urandom
 import argparse
 import serial
@@ -9,16 +9,16 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("balance", type=int,
                         help="Starting balance for account")
-    parser.add_argument("c-port", help="Serial port to the card")
-    parser.add_argument("b-port", help="Serial port to the bank")
-    parser.add_argument("--c-baudrate", type=int, default=115200,
+    parser.add_argument("cport", help="Serial port to the card")
+    parser.add_argument("bport", help="Serial port to the bank")
+    parser.add_argument("--cbaud", type=int, default=115200,
                         help="Baudrate of serial connection to the card")
-    parser.add_argument("--c-baudrate", type=int, default=115200,
+    parser.add_argument("--bbaud", type=int, default=115200,
                         help="Baudrate of serial connection to the bank")
     parser.add_argument("--pin", default="12345678",
                         help="Initial pin to program (default 12345678)")
     args = parser.parse_args()
-    return args.balance, args.c_port, args.b_port, args.c_baud, args.b_baud, args.pin
+    return args.balance, args.cport, args.bport, args.cbaud, args.bbaud, args.pin
 
 
 if __name__ == "__main__":
@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     # provision card
     print "Provisioning card..."
-    card = Card(serial.Serial(c_port, c_baud))
+    card = Card(c_port, baudrate=c_baud, verbose=True)
     uuid = urandom(18).encode("hex")
     if card.provision(uuid, pin):
         print "Card provisioned!"
